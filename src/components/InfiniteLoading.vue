@@ -33,8 +33,7 @@ const params: Params = {
   emit() {
     const parentEl = params.parentEl || document.documentElement;
     prevHeight = parentEl.scrollHeight;
-    stateHandler.loading();
-    emit("infinite", stateHandler);
+    if (state.value !== "loading") stateHandler.loading();
   },
 };
 
@@ -46,6 +45,7 @@ const resetObserver = () => {
 const stateHandler: StateHandler = {
   loading() {
     state.value = "loading";
+    emit("infinite", stateHandler);
   },
   async loaded() {
     params.firstload = false;
