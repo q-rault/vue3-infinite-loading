@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import type { Props, Params, State, StateHandler } from "@root/types";
-import { onMounted, ref, toRefs, onUnmounted, watch, nextTick } from "vue";
+import { computed, onMounted, ref, toRefs, onUnmounted, watch, nextTick } from "vue";
 import { startObserver, getParentEl, isVisible } from "@root/utils";
 // @ts-ignore
 import Spinner from "./Spinner.vue";
@@ -33,16 +33,22 @@ const params: Params = {
   emit() {
     const parentEl = params.parentEl || document.documentElement;
     prevHeight = parentEl.scrollHeight;
-    stateHandler.loading();
-    emit("infinite", stateHandler);
+    if (state.value !== "loading") stateHandler.loading();
   },
+};
+
+const resetObserver = () => {
+  observer?.disconnect();
+  observer = startObserver(params);
 };
 
 const stateHandler: StateHandler = {
   loading() {
     state.value = "loading";
+    emit("infinite", stateHandler);
   },
   async loaded() {
+    params.firstload = false;
     state.value = "loaded";
     const parentEl = params.parentEl || document.documentElement;
     await nextTick();
@@ -59,18 +65,23 @@ const stateHandler: StateHandler = {
 };
 
 watch(identifier, () => {
-  observer?.disconnect();
-  observer = startObserver(params);
+  resetObserver();
 });
 
 onMounted(async () => {
   params.parentEl = await getParentEl(target!);
-  observer = startObserver(params);
+  resetObserver();
 });
 
 onUnmounted(() => {
   observer?.disconnect();
 });
+
+const showNoMore = computed(() => state.value == "complete" && !params.firstload);
+
+const showNoResults = computed(() => state.value == "complete" && params.firstload);
+
+const showError = computed(() => state.value === "error");
 </script>
 
 <template>
@@ -80,10 +91,13 @@ onUnmounted(() => {
         <Spinner />
       </slot>
     </div>
-    <slot v-if="state == 'complete'" name="complete">
+    <slot v-if="showNoMore" name="complete">
       <span> {{ slots?.complete || "No more results!" }} </span>
     </slot>
-    <slot v-if="state == 'error'" name="error" :retry="params.emit">
+    <slot v-if="showNoResults" name="noResults">
+      <span> {{ slots?.noResults || "No data found!" }} </span>
+    </slot>
+    <slot v-if="showError" name="error" :retry="params.emit">
       <span class="state-error">
         <span>{{ slots?.error || "Oops something went wrong!" }}</span>
         <button class="retry" @click="params.emit">retry</button>

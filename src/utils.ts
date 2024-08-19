@@ -21,9 +21,9 @@ function startObserver(params: Params) {
   const observer = new IntersectionObserver(
     entries => {
       const entry = entries[0];
-      if (entry.isIntersecting) {
-        if (params.firstload) params.emit();
-        params.firstload = true;
+      if (entry.isIntersecting && params.firstload) {
+        params.firstload = false;
+        params.emit();
       }
     },
     { root: params.parentEl, rootMargin }
