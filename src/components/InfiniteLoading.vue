@@ -86,11 +86,9 @@ const showError = computed(() => state.value === "error");
 
 <template>
   <div ref="infiniteLoading" style="min-height: 1px">
-    <div v-show="state == 'loading'">
-      <slot name="spinner">
-        <Spinner />
-      </slot>
-    </div>
+    <slot v-if="state == 'loading'" name="spinner">
+      <Spinner />
+    </slot>
     <slot v-if="showNoMore" name="complete">
       <span> {{ slots?.complete || "No more results!" }} </span>
     </slot>
